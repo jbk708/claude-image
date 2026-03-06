@@ -7,19 +7,19 @@ A GitHub Actions workflow checks npm every 6 hours and pushes a new image to Doc
 ## Usage
 
 ```bash
-docker run -it -e ANTHROPIC_API_KEY=sk-ant-... <dockerhub-username>/claude-code
+docker run -it -e ANTHROPIC_API_KEY=sk-ant-... jbkirkland/claude-code
 ```
 
 Check the installed version:
 
 ```bash
-docker run -it <dockerhub-username>/claude-code --version
+docker run -it jbkirkland/claude-code --version
 ```
 
 Pin to a specific version:
 
 ```bash
-docker run -it <dockerhub-username>/claude-code:1.0.0
+docker run -it jbkirkland/claude-code:1.0.0
 ```
 
 ## Setup
