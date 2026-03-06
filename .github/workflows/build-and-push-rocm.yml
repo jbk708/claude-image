@@ -1,0 +1,61 @@
+name: Build and Push Docker Image (ROCm)
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get latest npm version
+        id: npm_version
+        run: |
+          VERSION=$(curl -s https://registry.npmjs.org/@anthropic-ai/claude-code/latest | jq -r '.version')
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Latest npm version: ${VERSION}"
+
+      - name: Check if Docker Hub tag exists
+        id: check_tag
+        run: |
+          REPO="${{ secrets.DOCKERHUB_USERNAME }}/claude-code"
+          VERSION="rocm-${{ steps.npm_version.outputs.version }}"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "https://hub.docker.com/v2/repositories/${REPO}/tags/${VERSION}")
+          if [ "$STATUS" = "200" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Tag ${VERSION} already exists on Docker Hub — skipping build."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "Tag ${VERSION} not found — will build and push."
+          fi
+
+      - name: Checkout
+        if: steps.check_tag.outputs.exists == 'false'
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        if: steps.check_tag.outputs.exists == 'false'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        if: steps.check_tag.outputs.exists == 'false'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push
+        if: steps.check_tag.outputs.exists == 'false'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.rocm
+          push: true
+          build-args: |
+            CLAUDE_VERSION=${{ steps.npm_version.outputs.version }}
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/claude-code:rocm-latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/claude-code:rocm-${{ steps.npm_version.outputs.version }}

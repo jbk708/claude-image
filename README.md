@@ -22,6 +22,20 @@ Pin to a specific version:
 docker run -it jbkirkland/claude-code:1.0.0
 ```
 
+### ROCm variant
+
+For AMD GPU environments with [ROCm](https://rocm.docs.amd.com/) support:
+
+```bash
+docker run -it -e ANTHROPIC_API_KEY=sk-ant-... jbkirkland/claude-code:rocm-latest
+```
+
+Pin to a specific version:
+
+```bash
+docker run -it jbkirkland/claude-code:rocm-1.0.0
+```
+
 ## Setup
 
 To enable automatic publishing, add these secrets to your GitHub repository:
@@ -44,4 +58,10 @@ Build a specific version:
 
 ```bash
 docker build --build-arg CLAUDE_VERSION=1.0.0 -t claude-code:1.0.0 .
+```
+
+Build the ROCm variant:
+
+```bash
+docker build -f Dockerfile.rocm -t claude-code:rocm-latest .
 ```

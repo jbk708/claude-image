@@ -1,0 +1,11 @@
+FROM rocm/dev-ubuntu-24.04:latest
+
+ARG CLAUDE_VERSION=latest
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git curl nodejs npm \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN npm install -g "@anthropic-ai/claude-code@${CLAUDE_VERSION}"
+
+ENTRYPOINT ["claude"]
