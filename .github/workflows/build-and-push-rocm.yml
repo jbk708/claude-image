@@ -1,6 +1,8 @@
 name: Build and Push Docker Image (ROCm)
 
 on:
+  push:
+    branches: [main]
   schedule:
     - cron: "0 */6 * * *"
   workflow_dispatch:
@@ -33,22 +35,22 @@ jobs:
           fi
 
       - name: Checkout
-        if: steps.check_tag.outputs.exists == 'false'
+        if: steps.check_tag.outputs.exists == 'false' || github.event_name == 'push'
         uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
-        if: steps.check_tag.outputs.exists == 'false'
+        if: steps.check_tag.outputs.exists == 'false' || github.event_name == 'push'
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to Docker Hub
-        if: steps.check_tag.outputs.exists == 'false'
+        if: steps.check_tag.outputs.exists == 'false' || github.event_name == 'push'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push
-        if: steps.check_tag.outputs.exists == 'false'
+        if: steps.check_tag.outputs.exists == 'false' || github.event_name == 'push'
         uses: docker/build-push-action@v6
         with:
           context: .
