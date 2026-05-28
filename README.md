@@ -81,7 +81,7 @@ Run with Tailscale:
 singularity run --nv \
   --writable-tmpfs \
   --bind /ddn_scratch:/ddn_scratch \
-  --bind /ddn_scratch/$USER/.env:/.env \
+  --bind ~/repos/claude-image/.env:/.env \
   /ddn_scratch/$USER/claude-code.sif --dangerously-skip-permissions
 ```
 
@@ -93,7 +93,7 @@ mkdir -p /ddn_scratch/$USER/.tailscale-state
 singularity run --nv \
   --writable-tmpfs \
   --bind /ddn_scratch:/ddn_scratch \
-  --bind /ddn_scratch/$USER/.env:/.env \
+  --bind ~/repos/claude-image/.env:/.env \
   --bind /ddn_scratch/$USER/.tailscale-state:/var/lib/tailscale \
   /ddn_scratch/$USER/claude-code.sif --dangerously-skip-permissions
 ```
