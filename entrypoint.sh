@@ -9,10 +9,9 @@ if [ -f /.env ]; then
 fi
 
 # Start tailscaled in userspace networking mode (no TUN device needed)
-TS_PROXY=localhost:1055
 tailscaled --tun=userspace-networking \
-  --outbound-http-proxy-listen=$TS_PROXY \
-  --socks5-server=$TS_PROXY \
+  --outbound-http-proxy-listen=localhost:1055 \
+  --socks5-server=localhost:1056 \
   --statedir=/var/lib/tailscale \
   --socket=/var/run/tailscale/tailscaled.sock &
 
@@ -28,9 +27,10 @@ fi
 # Authenticate and connect
 eval tailscale up $TS_UP_FLAGS
 
+# Wait for proxy listener to be ready
+sleep 1
+
 # Set proxy env vars so Claude API traffic routes through Tailscale
-# When using userspace networking, tailscale provides a SOCKS5 and HTTP proxy
-export ALL_PROXY=socks5://localhost:1055
 export HTTP_PROXY=http://localhost:1055
 export HTTPS_PROXY=http://localhost:1055
 
