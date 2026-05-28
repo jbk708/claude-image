@@ -66,6 +66,38 @@ The entrypoint script starts Tailscale in userspace networking mode (no `--privi
 
 Make sure the exit node is [advertising itself](https://tailscale.com/kb/1103/exit-nodes) and approved in the Tailscale admin console.
 
+### Singularity / Apptainer (HPC)
+
+Pull the image:
+
+```bash
+export APPTAINER_CACHEDIR=/ddn_scratch/$USER/.apptainer_cache
+singularity pull /ddn_scratch/$USER/claude-code.sif docker://jbkirkland/claude-code:latest
+```
+
+Run with Tailscale:
+
+```bash
+singularity run --nv \
+  --writable-tmpfs \
+  --bind /ddn_scratch:/ddn_scratch \
+  --bind /ddn_scratch/$USER/.env:/.env \
+  /ddn_scratch/$USER/claude-code.sif --dangerously-skip-permissions
+```
+
+`--writable-tmpfs` is required so `tailscaled` can write to its state directories. To persist Tailscale state across runs (avoids re-auth each time):
+
+```bash
+mkdir -p /ddn_scratch/$USER/.tailscale-state
+
+singularity run --nv \
+  --writable-tmpfs \
+  --bind /ddn_scratch:/ddn_scratch \
+  --bind /ddn_scratch/$USER/.env:/.env \
+  --bind /ddn_scratch/$USER/.tailscale-state:/var/lib/tailscale \
+  /ddn_scratch/$USER/claude-code.sif --dangerously-skip-permissions
+```
+
 ## Setup
 
 To enable automatic publishing, add these secrets to your GitHub repository:
