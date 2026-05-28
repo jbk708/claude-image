@@ -37,13 +37,10 @@ sleep 2
 
 # --- Diagnostics ---
 echo "=== Tailscale Diagnostics ==="
-tailscale status 2>/dev/null | head -3 || true
+tailscale status 2>/dev/null || true
 
-echo "SOCKS5 test:"
-curl -s --max-time 5 --socks5-hostname 127.0.0.1:1056 https://api.ipify.org && echo " OK" || echo " FAILED"
-
-echo "HTTP proxy test:"
-curl -s --max-time 5 -x http://127.0.0.1:1055 https://api.ipify.org && echo " OK" || echo " FAILED"
+echo "SOCKS5 test (15s timeout):"
+curl -s --max-time 15 --socks5-hostname 127.0.0.1:1056 https://api.ipify.org && echo " OK" || echo " FAILED"
 echo "=== End Diagnostics ==="
 
 # Claude Code is a compiled Bun binary (not Node.js).
