@@ -15,7 +15,6 @@ sleep 1
 
 # Start tailscaled in userspace networking mode (no TUN device needed)
 tailscaled --tun=userspace-networking \
-  --outbound-http-proxy-listen=localhost:1055 \
   --socks5-server=localhost:1056 \
   --statedir=/var/lib/tailscale \
   --socket=/var/run/tailscale/tailscaled.sock &
@@ -37,35 +36,17 @@ sleep 2
 
 # --- Diagnostics ---
 echo "=== Tailscale Diagnostics ==="
-echo "Tailscale status:"
-tailscale status || true
-echo ""
+tailscale status 2>/dev/null | head -3 || true
 
-echo "Checking proxy on localhost:1055..."
-if command -v curl > /dev/null 2>&1; then
-  curl -s --max-time 5 -x http://localhost:1055 https://api.ipify.org && echo " (proxy works)" || echo " (proxy FAILED)"
-else
-  echo "curl not available"
-fi
-echo ""
+echo "SOCKS5 proxy test:"
+curl -s --max-time 5 --socks5-hostname localhost:1056 https://api.ipify.org && echo " OK" || echo " FAILED"
 
-echo "Checking SOCKS5 on localhost:1056..."
-if command -v curl > /dev/null 2>&1; then
-  curl -s --max-time 5 --socks5 localhost:1056 https://api.ipify.org && echo " (socks works)" || echo " (socks FAILED)"
-fi
-echo ""
-
-echo "Checking direct connectivity to api.anthropic.com..."
-if command -v curl > /dev/null 2>&1; then
-  curl -s --max-time 5 https://api.anthropic.com/ && echo " (direct works)" || echo " (direct FAILED - expected on blocked network)"
-fi
-echo ""
-
-echo "Testing proxy-setup.js loading..."
-node -e "require('/proxy-setup.js'); console.log('proxy-setup.js loaded OK')" 2>&1 || echo "proxy-setup.js FAILED to load"
+echo "proxy-setup.js test:"
+NODE_PATH=/usr/local/lib/node_modules node -e "require('/proxy-setup.js'); console.log('OK')" 2>&1
 echo "=== End Diagnostics ==="
 
-# Patch Node.js fetch() to use Tailscale's HTTP proxy (undici is built into Node 22)
+# Ensure globally installed npm packages are findable by require()
+export NODE_PATH=/usr/local/lib/node_modules
 export NODE_OPTIONS="--require /proxy-setup.js ${NODE_OPTIONS:-}"
 
 exec claude "$@"

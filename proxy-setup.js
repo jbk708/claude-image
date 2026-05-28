@@ -1,10 +1,40 @@
 // Loaded via NODE_OPTIONS="--require /proxy-setup.js"
-// Patches Node.js built-in fetch() to route through Tailscale's HTTP proxy
-try {
-  const { setGlobalDispatcher, ProxyAgent } = require('undici');
-  const proxyUrl = process.env.TS_HTTP_PROXY || 'http://127.0.0.1:1055';
-  setGlobalDispatcher(new ProxyAgent(proxyUrl));
-  console.error('[proxy-setup] Patched fetch() to use proxy:', proxyUrl);
-} catch (err) {
-  console.error('[proxy-setup] FAILED to patch fetch():', err.message);
-}
+// Routes all fetch() traffic through Tailscale's SOCKS5 proxy
+const tls = require('tls');
+const { SocksClient } = require('socks');
+const { Agent, setGlobalDispatcher } = require('undici');
+
+const SOCKS_HOST = '127.0.0.1';
+const SOCKS_PORT = parseInt(process.env.TS_SOCKS_PORT || '1056');
+
+const agent = new Agent({
+  connect: async (opts, cb) => {
+    try {
+      const { socket } = await SocksClient.createConnection({
+        proxy: { host: SOCKS_HOST, port: SOCKS_PORT, type: 5 },
+        command: 'connect',
+        destination: {
+          host: opts.hostname,
+          port: parseInt(opts.port || '443'),
+        },
+      });
+
+      if (opts.protocol === 'https:') {
+        const tlsSocket = tls.connect({
+          socket,
+          servername: opts.hostname,
+          ALPNProtocols: ['http/1.1'],
+        });
+        tlsSocket.on('secureConnect', () => cb(null, tlsSocket));
+        tlsSocket.on('error', (err) => cb(err));
+      } else {
+        cb(null, socket);
+      }
+    } catch (err) {
+      cb(err);
+    }
+  },
+});
+
+setGlobalDispatcher(agent);
+console.error('[proxy-setup] fetch() patched to use SOCKS5 proxy on', SOCKS_HOST + ':' + SOCKS_PORT);

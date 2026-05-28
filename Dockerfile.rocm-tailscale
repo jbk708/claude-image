@@ -16,7 +16,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends git gh nodejs npm tailscale \
     && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g "@anthropic-ai/claude-code@${CLAUDE_VERSION}"
+RUN npm install -g "@anthropic-ai/claude-code@${CLAUDE_VERSION}" undici socks
 
 RUN mkdir -p /var/run/tailscale /var/lib/tailscale
 
