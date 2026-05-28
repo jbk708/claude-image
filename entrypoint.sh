@@ -9,7 +9,12 @@ if [ -f /.env ]; then
 fi
 
 # Start tailscaled in userspace networking mode (no TUN device needed)
-tailscaled --tun=userspace-networking --statedir=/var/lib/tailscale --socket=/var/run/tailscale/tailscaled.sock &
+TS_PROXY=localhost:1055
+tailscaled --tun=userspace-networking \
+  --outbound-http-proxy-listen=$TS_PROXY \
+  --socks5-server=$TS_PROXY \
+  --statedir=/var/lib/tailscale \
+  --socket=/var/run/tailscale/tailscaled.sock &
 
 # Wait for tailscaled to be ready
 sleep 2
