@@ -30,8 +30,14 @@ eval tailscale up $TS_UP_FLAGS
 # Wait for proxy listener to be ready
 sleep 1
 
-# Set proxy env vars so Claude API traffic routes through Tailscale
-export HTTP_PROXY=http://localhost:1055
-export HTTPS_PROXY=http://localhost:1055
+# Configure proxychains to use Tailscale's SOCKS5 proxy
+cat > /tmp/proxychains.conf <<EOF
+strict_chain
+proxy_dns
+tcp_read_time_out 15000
+tcp_connect_time_out 8000
+[ProxyList]
+socks5 127.0.0.1 1056
+EOF
 
-exec claude "$@"
+exec proxychains4 -f /tmp/proxychains.conf claude "$@"

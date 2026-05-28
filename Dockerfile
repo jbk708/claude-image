@@ -13,7 +13,7 @@ RUN apt-get update \
     && echo "deb [signed-by=/usr/share/keyrings/tailscale-archive-keyring.gpg] https://pkgs.tailscale.com/stable/debian bookworm main" \
       > /etc/apt/sources.list.d/tailscale.list \
     && apt-get update \
-    && apt-get install -y --no-install-recommends git gh tailscale \
+    && apt-get install -y --no-install-recommends git gh tailscale proxychains4 \
     && rm -rf /var/lib/apt/lists/*
 
 RUN npm install -g "@anthropic-ai/claude-code@${CLAUDE_VERSION}"
