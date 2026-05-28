@@ -30,10 +30,13 @@ eval tailscale up $TS_UP_FLAGS
 # Wait for proxy listener to be ready
 sleep 1
 
-# Use global-agent to force Node.js HTTP/HTTPS through Tailscale's HTTP proxy
-export GLOBAL_AGENT_HTTP_PROXY=http://127.0.0.1:1055
-export GLOBAL_AGENT_HTTPS_PROXY=http://127.0.0.1:1055
-export GLOBAL_AGENT_NO_PROXY=127.0.0.1,localhost
-export NODE_OPTIONS="--require global-agent/bootstrap ${NODE_OPTIONS:-}"
+# Verify proxy is listening
+if ! tailscale status > /dev/null 2>&1; then
+  echo "ERROR: Tailscale is not running"
+  exit 1
+fi
+
+# Patch Node.js fetch() to use Tailscale's HTTP proxy (undici is built into Node 22)
+export NODE_OPTIONS="--require /proxy-setup.js ${NODE_OPTIONS:-}"
 
 exec claude "$@"
