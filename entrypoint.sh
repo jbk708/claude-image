@@ -15,7 +15,8 @@ sleep 1
 
 # Start tailscaled in userspace networking mode (no TUN device needed)
 tailscaled --tun=userspace-networking \
-  --socks5-server=localhost:1056 \
+  --outbound-http-proxy-listen=127.0.0.1:1055 \
+  --socks5-server=127.0.0.1:1056 \
   --statedir=/var/lib/tailscale \
   --socket=/var/run/tailscale/tailscaled.sock &
 
@@ -38,15 +39,16 @@ sleep 2
 echo "=== Tailscale Diagnostics ==="
 tailscale status 2>/dev/null | head -3 || true
 
-echo "SOCKS5 proxy test:"
-curl -s --max-time 5 --socks5-hostname localhost:1056 https://api.ipify.org && echo " OK" || echo " FAILED"
+echo "SOCKS5 test:"
+curl -s --max-time 5 --socks5-hostname 127.0.0.1:1056 https://api.ipify.org && echo " OK" || echo " FAILED"
 
-echo "proxy-setup.js test:"
-NODE_PATH=/usr/local/lib/node_modules node -e "require('/proxy-setup.js'); console.log('OK')" 2>&1
+echo "HTTP proxy test:"
+curl -s --max-time 5 -x http://127.0.0.1:1055 https://api.ipify.org && echo " OK" || echo " FAILED"
 echo "=== End Diagnostics ==="
 
-# Ensure globally installed npm packages are findable by require()
-export NODE_PATH=/usr/local/lib/node_modules
-export NODE_OPTIONS="--require /proxy-setup.js ${NODE_OPTIONS:-}"
+# Claude Code is a compiled Bun binary (not Node.js).
+# Bun natively respects HTTP_PROXY/HTTPS_PROXY env vars.
+export HTTP_PROXY=socks5://127.0.0.1:1056
+export HTTPS_PROXY=socks5://127.0.0.1:1056
 
 exec claude "$@"

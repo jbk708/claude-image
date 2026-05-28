@@ -16,11 +16,10 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends git gh tailscale \
     && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g "@anthropic-ai/claude-code@${CLAUDE_VERSION}" undici socks socks-proxy-agent
+RUN npm install -g "@anthropic-ai/claude-code@${CLAUDE_VERSION}"
 
 RUN mkdir -p /var/run/tailscale /var/lib/tailscale
 
-COPY proxy-setup.js /proxy-setup.js
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
