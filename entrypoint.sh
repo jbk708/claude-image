@@ -8,6 +8,11 @@ if [ -f /.env ]; then
   set +a
 fi
 
+# Clean up any leftover tailscaled from a previous run (shared network namespace in Singularity)
+pkill -f tailscaled 2>/dev/null || true
+rm -f /var/run/tailscale/tailscaled.sock
+sleep 1
+
 # Start tailscaled in userspace networking mode (no TUN device needed)
 tailscaled --tun=userspace-networking \
   --outbound-http-proxy-listen=localhost:1055 \
