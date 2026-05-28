@@ -36,6 +36,36 @@ Pin to a specific version:
 docker run -it jbkirkland/claude-code:rocm-1.0.0
 ```
 
+## Tailscale Integration
+
+The image includes [Tailscale](https://tailscale.com/) for routing API traffic through your tailnet. This is useful when the Anthropic API is blocked on the node where the container runs.
+
+### Configuration
+
+Copy the example env file and fill in your values:
+
+```bash
+cp .env.example .env
+```
+
+| Variable | Required | Description |
+|---|---|---|
+| `TS_AUTHKEY` | Yes | Tailscale auth key ([generate one](https://login.tailscale.com/admin/settings/keys)) |
+| `TS_EXIT_NODE` | Yes | Tailscale exit node to route traffic through |
+| `TS_HOSTNAME` | No | Node name on your tailnet (default: `claude-code`) |
+
+### Running with Tailscale
+
+Mount your `.env` file into the container:
+
+```bash
+docker run -it -v $(pwd)/.env:/.env jbkirkland/claude-code
+```
+
+The entrypoint script starts Tailscale in userspace networking mode (no `--privileged` needed), authenticates via your auth key, connects to the specified exit node, and then launches Claude.
+
+Make sure the exit node is [advertising itself](https://tailscale.com/kb/1103/exit-nodes) and approved in the Tailscale admin console.
+
 ## Setup
 
 To enable automatic publishing, add these secrets to your GitHub repository:
