@@ -1,0 +1,72 @@
+name: Build and Push Docker Image (Tailscale)
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - dockerfile: Dockerfile.tailscale
+            tag_prefix: tailscale
+            check_prefix: tailscale
+          - dockerfile: Dockerfile.rocm-tailscale
+            tag_prefix: rocm-tailscale
+            check_prefix: rocm-tailscale
+
+    steps:
+      - name: Get latest npm version
+        id: npm_version
+        run: |
+          VERSION=$(curl -s https://registry.npmjs.org/@anthropic-ai/claude-code/latest | jq -r '.version')
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Latest npm version: ${VERSION}"
+
+      - name: Check if Docker Hub tag exists
+        id: check_tag
+        run: |
+          REPO="${{ secrets.DOCKERHUB_USERNAME }}/claude-code"
+          VERSION="${{ matrix.check_prefix }}-${{ steps.npm_version.outputs.version }}"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "https://hub.docker.com/v2/repositories/${REPO}/tags/${VERSION}")
+          if [ "$STATUS" = "200" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Tag ${VERSION} already exists on Docker Hub — skipping build."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "Tag ${VERSION} not found — will build and push."
+          fi
+
+      - name: Checkout
+        if: steps.check_tag.outputs.exists == 'false' || github.event_name == 'push'
+        uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        if: steps.check_tag.outputs.exists == 'false' || github.event_name == 'push'
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to Docker Hub
+        if: steps.check_tag.outputs.exists == 'false' || github.event_name == 'push'
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push
+        if: steps.check_tag.outputs.exists == 'false' || github.event_name == 'push'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          build-args: |
+            CLAUDE_VERSION=${{ steps.npm_version.outputs.version }}
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/claude-code:${{ matrix.tag_prefix }}-latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/claude-code:${{ matrix.tag_prefix }}-${{ steps.npm_version.outputs.version }}

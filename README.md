@@ -4,6 +4,15 @@ Auto-published Docker image with [Claude Code](https://docs.anthropic.com/en/doc
 
 A GitHub Actions workflow checks npm every 6 hours and pushes a new image to Docker Hub whenever a new version is released.
 
+## Tags
+
+| Tag | Description |
+|---|---|
+| `latest` / `<version>` | Base image |
+| `rocm-latest` / `rocm-<version>` | AMD GPU with [ROCm](https://rocm.docs.amd.com/) |
+| `tailscale-latest` / `tailscale-<version>` | Base + Tailscale networking |
+| `rocm-tailscale-latest` / `rocm-tailscale-<version>` | ROCm + Tailscale networking |
+
 ## Usage
 
 ```bash
@@ -22,23 +31,9 @@ Pin to a specific version:
 docker run -it jbkirkland/claude-code:1.0.0
 ```
 
-### ROCm variant
-
-For AMD GPU environments with [ROCm](https://rocm.docs.amd.com/) support:
-
-```bash
-docker run -it -e ANTHROPIC_API_KEY=sk-ant-... jbkirkland/claude-code:rocm-latest
-```
-
-Pin to a specific version:
-
-```bash
-docker run -it jbkirkland/claude-code:rocm-1.0.0
-```
-
 ## Tailscale Integration
 
-The image includes [Tailscale](https://tailscale.com/) for routing API traffic through your tailnet. This is useful when the Anthropic API is blocked on the node where the container runs.
+The `tailscale` tagged images include [Tailscale](https://tailscale.com/) and [proxychains4](https://github.com/rofl0r/proxychains-ng) for routing API traffic through your tailnet. This is useful when the Anthropic API is blocked on the node where the container runs.
 
 ### Configuration
 
@@ -54,15 +49,13 @@ cp .env.example .env
 | `TS_EXIT_NODE` | Yes | Tailscale exit node to route traffic through |
 | `TS_HOSTNAME` | No | Node name on your tailnet (default: `claude-code`) |
 
-### Running with Tailscale
-
-Mount your `.env` file into the container:
+### Running with Tailscale (Docker)
 
 ```bash
-docker run -it -v $(pwd)/.env:/.env jbkirkland/claude-code
+docker run -it -v $(pwd)/.env:/.env jbkirkland/claude-code:tailscale-latest
 ```
 
-The entrypoint script starts Tailscale in userspace networking mode (no `--privileged` needed), authenticates via your auth key, connects to the specified exit node, and then launches Claude.
+The entrypoint starts Tailscale in userspace networking mode (no `--privileged` needed), authenticates via your auth key, connects to the specified exit node, and launches Claude through `proxychains4`.
 
 Make sure the exit node is [advertising itself](https://tailscale.com/kb/1103/exit-nodes) and approved in the Tailscale admin console.
 
@@ -72,7 +65,7 @@ Pull the image:
 
 ```bash
 export APPTAINER_CACHEDIR=/ddn_scratch/$USER/.apptainer_cache
-singularity pull /ddn_scratch/$USER/claude-code.sif docker://jbkirkland/claude-code:latest
+singularity pull /ddn_scratch/$USER/claude-code-tailscale.sif docker://jbkirkland/claude-code:tailscale-latest
 ```
 
 Run with Tailscale:
@@ -82,7 +75,7 @@ singularity run --nv \
   --writable-tmpfs \
   --bind /ddn_scratch:/ddn_scratch \
   --bind ~/repos/claude-image/.env:/.env \
-  /ddn_scratch/$USER/claude-code.sif --dangerously-skip-permissions
+  /ddn_scratch/$USER/claude-code-tailscale.sif --dangerously-skip-permissions
 ```
 
 `--writable-tmpfs` is required so `tailscaled` can write to its state directories. To persist Tailscale state across runs (avoids re-auth each time):
@@ -95,7 +88,7 @@ singularity run --nv \
   --bind /ddn_scratch:/ddn_scratch \
   --bind ~/repos/claude-image/.env:/.env \
   --bind /ddn_scratch/$USER/.tailscale-state:/var/lib/tailscale \
-  /ddn_scratch/$USER/claude-code.sif --dangerously-skip-permissions
+  /ddn_scratch/$USER/claude-code-tailscale.sif --dangerously-skip-permissions
 ```
 
 ## Setup
@@ -126,4 +119,10 @@ Build the ROCm variant:
 
 ```bash
 docker build -f Dockerfile.rocm -t claude-code:rocm-latest .
+```
+
+Build the Tailscale variant:
+
+```bash
+docker build -f Dockerfile.tailscale -t claude-code:tailscale-latest .
 ```

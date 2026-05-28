@@ -30,14 +30,10 @@ eval tailscale up $TS_UP_FLAGS
 # Wait for proxy listener to be ready
 sleep 1
 
-# Configure proxychains to use Tailscale's SOCKS5 proxy
-cat > /tmp/proxychains.conf <<EOF
-strict_chain
-proxy_dns
-tcp_read_time_out 15000
-tcp_connect_time_out 8000
-[ProxyList]
-socks5 127.0.0.1 1056
-EOF
+# Use global-agent to force Node.js HTTP/HTTPS through Tailscale's HTTP proxy
+export GLOBAL_AGENT_HTTP_PROXY=http://127.0.0.1:1055
+export GLOBAL_AGENT_HTTPS_PROXY=http://127.0.0.1:1055
+export GLOBAL_AGENT_NO_PROXY=127.0.0.1,localhost
+export NODE_OPTIONS="--require global-agent/bootstrap ${NODE_OPTIONS:-}"
 
-exec proxychains4 -f /tmp/proxychains.conf claude "$@"
+exec claude "$@"
