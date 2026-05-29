@@ -45,7 +45,7 @@ echo "=== End Diagnostics ==="
 
 # Claude Code is a compiled Bun binary (not Node.js).
 # Bun natively respects HTTP_PROXY/HTTPS_PROXY env vars.
-export HTTP_PROXY=socks5://127.0.0.1:1056
-export HTTPS_PROXY=socks5://127.0.0.1:1056
+export HTTP_PROXY=http://127.0.0.1:1055
+export HTTPS_PROXY=http://127.0.0.1:1055
 
 exec claude "$@"
