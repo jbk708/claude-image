@@ -13,13 +13,14 @@ RUN apt-get update \
     && echo "deb [signed-by=/usr/share/keyrings/tailscale-archive-keyring.gpg] https://pkgs.tailscale.com/stable/ubuntu noble main" \
       > /etc/apt/sources.list.d/tailscale.list \
     && apt-get update \
-    && apt-get install -y --no-install-recommends git gh nodejs npm tailscale \
+    && apt-get install -y --no-install-recommends git gh nodejs npm tailscale proxychains4 \
     && rm -rf /var/lib/apt/lists/*
 
 RUN npm install -g "@anthropic-ai/claude-code@${CLAUDE_VERSION}"
 
 RUN mkdir -p /var/run/tailscale /var/lib/tailscale
 
+COPY proxychains.conf /etc/proxychains4.conf
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
