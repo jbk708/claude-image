@@ -45,8 +45,11 @@ curl -s --max-time 15 --socks5-hostname 127.0.0.1:1056 https://api.ipify.org && 
 echo "HTTP proxy test (15s timeout):"
 curl -s --max-time 15 -x http://127.0.0.1:1055 https://api.ipify.org && echo " OK" || echo " FAILED"
 
-echo "SOCKS5 -> Anthropic API test:"
-curl -s --max-time 15 --socks5-hostname 127.0.0.1:1056 -o /dev/null -w "%{http_code}" https://api.anthropic.com/v1/messages && echo " OK" || echo " FAILED"
+echo "HTTP proxy -> Anthropic API test:"
+curl -s --max-time 15 -x http://127.0.0.1:1055 -o /dev/null -w "%{http_code}" https://api.anthropic.com/v1/messages && echo " OK" || echo " FAILED"
+
+echo "proxychains4 -> Anthropic API test:"
+proxychains4 -q curl -s --max-time 15 -o /dev/null -w "%{http_code}" https://api.anthropic.com/v1/messages && echo " OK" || echo " FAILED"
 echo "=== End Diagnostics ==="
 
 # Claude Code is a compiled Bun binary that ignores proxy env vars.
