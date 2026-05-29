@@ -45,17 +45,18 @@ curl -s --max-time 15 --socks5-hostname 127.0.0.1:1056 https://api.ipify.org && 
 echo "HTTP proxy test (15s timeout):"
 curl -s --max-time 15 -x http://127.0.0.1:1055 https://api.ipify.org && echo " OK" || echo " FAILED"
 
-echo "HTTP proxy -> Anthropic API test:"
-curl -s --max-time 15 -x http://127.0.0.1:1055 -o /dev/null -w "%{http_code}" https://api.anthropic.com/v1/messages && echo " OK" || echo " FAILED"
+echo "SOCKS5 -> Anthropic API test:"
+curl -s --max-time 15 --socks5-hostname 127.0.0.1:1056 -o /dev/null -w "%{http_code}" https://api.anthropic.com/v1/messages && echo " OK" || echo " FAILED"
 echo "=== End Diagnostics ==="
 
 # Claude Code is a compiled Bun binary (not Node.js).
-# Set all proxy env var forms — Bun may check lowercase or uppercase.
-export HTTP_PROXY=http://127.0.0.1:1055
-export HTTPS_PROXY=http://127.0.0.1:1055
-export http_proxy=http://127.0.0.1:1055
-export https_proxy=http://127.0.0.1:1055
-export ALL_PROXY=http://127.0.0.1:1055
-export all_proxy=http://127.0.0.1:1055
+# Tailscale's HTTP CONNECT proxy fails for api.anthropic.com, so use SOCKS5.
+# socks5h:// means DNS resolution also happens through the proxy.
+export HTTP_PROXY=socks5h://127.0.0.1:1056
+export HTTPS_PROXY=socks5h://127.0.0.1:1056
+export http_proxy=socks5h://127.0.0.1:1056
+export https_proxy=socks5h://127.0.0.1:1056
+export ALL_PROXY=socks5h://127.0.0.1:1056
+export all_proxy=socks5h://127.0.0.1:1056
 
 exec claude "$@"
