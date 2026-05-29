@@ -41,11 +41,21 @@ tailscale status 2>/dev/null || true
 
 echo "SOCKS5 test (15s timeout):"
 curl -s --max-time 15 --socks5-hostname 127.0.0.1:1056 https://api.ipify.org && echo " OK" || echo " FAILED"
+
+echo "HTTP proxy test (15s timeout):"
+curl -s --max-time 15 -x http://127.0.0.1:1055 https://api.ipify.org && echo " OK" || echo " FAILED"
+
+echo "HTTP proxy -> Anthropic API test:"
+curl -s --max-time 15 -x http://127.0.0.1:1055 -o /dev/null -w "%{http_code}" https://api.anthropic.com/v1/messages && echo " OK" || echo " FAILED"
 echo "=== End Diagnostics ==="
 
 # Claude Code is a compiled Bun binary (not Node.js).
-# Bun natively respects HTTP_PROXY/HTTPS_PROXY env vars.
+# Set all proxy env var forms — Bun may check lowercase or uppercase.
 export HTTP_PROXY=http://127.0.0.1:1055
 export HTTPS_PROXY=http://127.0.0.1:1055
+export http_proxy=http://127.0.0.1:1055
+export https_proxy=http://127.0.0.1:1055
+export ALL_PROXY=http://127.0.0.1:1055
+export all_proxy=http://127.0.0.1:1055
 
 exec claude "$@"
